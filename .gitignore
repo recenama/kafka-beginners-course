@@ -2,3 +2,5 @@
 gradle/
 .gradle
 gradlew.bat
+kafka-basics/build/
+kafka-basics/out/
