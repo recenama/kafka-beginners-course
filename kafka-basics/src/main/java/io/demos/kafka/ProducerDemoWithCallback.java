@@ -27,28 +27,30 @@ public class ProducerDemoWithCallback {
         // create a producer
         KafkaProducer<String, String> producer = new KafkaProducer<>(properties);
 
-        //create a Producer Record
-        ProducerRecord<String, String> producerRecord = new ProducerRecord<>("demo_java", "hello world");
+        for (int i = 0; i < 10; i++) {
+ 
+            //create a Producer Record
+            ProducerRecord<String, String> producerRecord = new ProducerRecord<>("demo_java", "hello world"+ i);
 
-        //send data
-        producer.send(producerRecord, new Callback() {
-            @Override
-            public void onCompletion(RecordMetadata metadata, Exception exception) {
-                // executes every time a record successfully sent or an exception is thrown
-                if (exception == null) {
-                    // the record was successfully sent
-                    log.info("Received new metadata \n" +
-                            "Topic: " + metadata.topic() + "\n" +
-                            "Partition: " + metadata.partition() + "\n" +
-                            "Offset: " + metadata.offset() + "\n" +
-                            "Timestamp: " + metadata.timestamp());
+            //send data
+            producer.send(producerRecord, new Callback() {
+                @Override
+                public void onCompletion(RecordMetadata metadata, Exception exception) {
+                    // executes every time a record successfully sent or an exception is thrown
+                    if (exception == null) {
+                        // the record was successfully sent
+                        log.info("Received new metadata \n" +
+                                "Topic: " + metadata.topic() + "\n" +
+                                "Partition: " + metadata.partition() + "\n" +
+                                "Offset: " + metadata.offset() + "\n" +
+                                "Timestamp: " + metadata.timestamp());
 
-                } else {
-                    log.error("Error while producing", exception);
+                    } else {
+                        log.error("Error while producing", exception);
+                    }
                 }
-            }
-        });
-
+            });
+        }
         // tell the producer to send all data and block until done -- synchronous
         producer.flush();
 
