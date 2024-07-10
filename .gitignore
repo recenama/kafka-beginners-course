@@ -4,3 +4,4 @@ gradle/
 gradlew.bat
 kafka-basics/build/
 kafka-basics/out/
+kafka-producer-wikimedia/out/
