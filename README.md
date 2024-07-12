@@ -13,3 +13,11 @@
   kafka-topics.sh --bootstrap-server localhost:9092 --delete --topic <TOPIC_NAME>
   kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic <TOPIC_NAME> --from-beginning
 ```
+
+### Important notes about Kafka 3(version used here)
+Properties by default
+```
+  enable.idempotence = true
+  acks = -1
+  retries = 2147483647
+```
