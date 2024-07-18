@@ -1,5 +1,6 @@
 package io.demos.kafka.opensearch;
 
+import com.google.gson.JsonParser;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -76,6 +77,15 @@ public class OpenSearchConsumer {
         return new KafkaConsumer<>(properties);
     }
 
+    private static String extractId(String json) {
+        return JsonParser.parseString(json)
+                .getAsJsonObject()
+                .get("meta")
+                .getAsJsonObject()
+                .get("id")
+                .getAsString();
+    }
+
     public static void main(String[] args) {
         Logger log = LoggerFactory.getLogger(OpenSearchConsumer.class.getSimpleName());
 
@@ -106,8 +116,13 @@ public class OpenSearchConsumer {
 
                 for (ConsumerRecord<String, String> record : records) {
                     try {
+                        // extract ID from json value
+                        String id = extractId(record.value());
                         // send the record into Opensearch
-                        IndexRequest indexRequest = new IndexRequest("wikimedia").source(record.value(), XContentType.JSON);
+                        IndexRequest indexRequest = new IndexRequest("wikimedia")
+                                .source(record.value(), XContentType.JSON)
+                                .id(id);
+
                         IndexResponse response = openSearchClient.index(indexRequest, RequestOptions.DEFAULT);
 
                         log.info(response.getId());
