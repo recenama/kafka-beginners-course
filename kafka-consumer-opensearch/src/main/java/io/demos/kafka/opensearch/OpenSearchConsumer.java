@@ -9,8 +9,9 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.opensearch.action.bulk.BulkRequest;
+import org.opensearch.action.bulk.BulkResponse;
 import org.opensearch.action.index.IndexRequest;
-import org.opensearch.action.index.IndexResponse;
 import org.opensearch.client.RequestOptions;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.RestHighLevelClient;
@@ -71,7 +72,8 @@ public class OpenSearchConsumer {
         properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupId);
-        properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+        properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        properties.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
 
         // create a consumer
         return new KafkaConsumer<>(properties);
@@ -86,7 +88,7 @@ public class OpenSearchConsumer {
                 .getAsString();
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         Logger log = LoggerFactory.getLogger(OpenSearchConsumer.class.getSimpleName());
 
         RestHighLevelClient openSearchClient = createOpenSearchClient();
@@ -112,28 +114,40 @@ public class OpenSearchConsumer {
             while (true) {
                 ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(3000));
                 int recordCount = records.count();
-                log.info("Received" + recordCount + "record(s)");
+                log.info("Received " + recordCount + " record(s)");
+
+                BulkRequest bulkRequest = new BulkRequest();
 
                 for (ConsumerRecord<String, String> record : records) {
                     try {
                         // extract ID from json value
                         String id = extractId(record.value());
+
                         // send the record into Opensearch
                         IndexRequest indexRequest = new IndexRequest("wikimedia")
                                 .source(record.value(), XContentType.JSON)
                                 .id(id);
 
-                        IndexResponse response = openSearchClient.index(indexRequest, RequestOptions.DEFAULT);
-
-                        log.info(response.getId());
+                        bulkRequest.add(indexRequest);
                     } catch (Exception e) {
                     }
-
                 }
+
+                if (bulkRequest.numberOfActions() > 0) {
+                    BulkResponse bulkResponse = openSearchClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+                    log.info("inserted " + bulkResponse.getItems().length + " record(s)");
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                // commit offset after the batch is consumed
+                consumer.commitSync();
+                log.info("Offsets have been commited");
             }
 
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
     }
 }
