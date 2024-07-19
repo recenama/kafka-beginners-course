@@ -1,9 +1,6 @@
 package io.demos.kafka;
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.CooperativeStickyAssignor;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.slf4j.Logger;
@@ -18,18 +15,19 @@ public class ConsumerDemoCooperative {
 
     public static void main(String[] args) {
         log.info("I'm a kafka consumer");
+        String bootstrapServer = "127.0.0.1:9092";
         String groupId = "my-java-application";
         String topic = "demo_java";
         // connect to local host
         Properties properties = new Properties();
-        properties.setProperty("bootstrap.servers", "127.0.0.1:9092");
 
         // set consumer properties
-        properties.setProperty("key.deserializer", StringDeserializer.class.getName());
-        properties.setProperty("value.deserializer", StringDeserializer.class.getName());
-        properties.setProperty("group.id", groupId);
-        properties.setProperty("auto.offset.reset", "earliest");
-        properties.setProperty("partition.assignment.strategy", CooperativeStickyAssignor.class.getName());
+        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
+        properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        properties.setProperty(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG, CooperativeStickyAssignor.class.getName());
 
         // create a consumer
         KafkaConsumer<String, String> consumer = new KafkaConsumer(properties);

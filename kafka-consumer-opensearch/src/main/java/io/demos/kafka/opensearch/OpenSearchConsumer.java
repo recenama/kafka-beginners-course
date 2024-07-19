@@ -91,6 +91,8 @@ public class OpenSearchConsumer {
 
     public static void main(String[] args) throws IOException {
         Logger log = LoggerFactory.getLogger(OpenSearchConsumer.class.getSimpleName());
+        String index = "wikimedia";
+        String topic = "wikimedia.recentchange";
 
         RestHighLevelClient openSearchClient = createOpenSearchClient();
 
@@ -116,10 +118,10 @@ public class OpenSearchConsumer {
         });
 
         try (openSearchClient; consumer) {
-            boolean indexExists = openSearchClient.indices().exists(new GetIndexRequest("wikimedia"), RequestOptions.DEFAULT);
+            boolean indexExists = openSearchClient.indices().exists(new GetIndexRequest(index), RequestOptions.DEFAULT);
 
             if (!indexExists) {
-                CreateIndexRequest createIndexRequest = new CreateIndexRequest("wikimedia");
+                CreateIndexRequest createIndexRequest = new CreateIndexRequest(index);
                 openSearchClient.indices().create(createIndexRequest, RequestOptions.DEFAULT);
                 log.info("The wikimedia index has been created");
             } else {
@@ -128,7 +130,7 @@ public class OpenSearchConsumer {
             }
 
             // subscribe the consumer
-            consumer.subscribe(Collections.singleton("wikimedia.recentchange"));
+            consumer.subscribe(Collections.singleton(topic));
 
             while (true) {
                 ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(3000));
@@ -143,7 +145,7 @@ public class OpenSearchConsumer {
                         String id = extractId(record.value());
 
                         // send the record into Opensearch
-                        IndexRequest indexRequest = new IndexRequest("wikimedia")
+                        IndexRequest indexRequest = new IndexRequest(index)
                                 .source(record.value(), XContentType.JSON)
                                 .id(id);
 

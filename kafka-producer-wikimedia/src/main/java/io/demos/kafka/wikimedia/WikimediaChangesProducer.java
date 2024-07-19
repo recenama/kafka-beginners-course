@@ -5,6 +5,7 @@ import com.launchdarkly.eventsource.EventSource;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
+
 import java.net.URI;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -12,11 +13,16 @@ import java.util.concurrent.TimeUnit;
 public class WikimediaChangesProducer {
 
     public static void main(String[] args) throws InterruptedException {
+        String bootstrapServer = "127.0.0.1:9092";
+        String topic = "wikimedia.recentchange";
+        String url = "https://stream.wikimedia.org/v2/stream/recentchange";
+
         // set producer properties
         Properties properties = new Properties();
-        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,"127.0.0.1:9092");
+
+        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
         properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,StringSerializer.class.getName());
+        properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
 
         // set high throughput producer configs
         properties.setProperty(ProducerConfig.LINGER_MS_CONFIG, "20");
@@ -24,12 +30,10 @@ public class WikimediaChangesProducer {
         properties.setProperty(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
 
         // create a producer
-        KafkaProducer<String,String> producer = new KafkaProducer<>(properties);
+        KafkaProducer<String, String> producer = new KafkaProducer<>(properties);
 
-        String topic ="wikimedia.recentchange";
 
-        EventHandler eventHandler = new WikimediaChangeHandler(producer,topic);
-        String url = "https://stream.wikimedia.org/v2/stream/recentchange";
+        EventHandler eventHandler = new WikimediaChangeHandler(producer, topic);
         EventSource.Builder builder = new EventSource.Builder(eventHandler, URI.create(url));
         EventSource eventSource = builder.build();
 
